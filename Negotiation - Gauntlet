@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Negotiation Gauntlet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .scenario-card {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #negotiation-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        #negotiation-log::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        #negotiation-log::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        .option-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .perspective-switch-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        /* Password container styles */
+        #password-container, #game-container { text-align: center; margin-top: 50px; }
+        #game-container { display: none; }
+        input, button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+    <!-- Password Prompt -->
+    <div id="password-container">
+        <h2>Enter Password</h2>
+        <input type="password" id="password-input" placeholder="Password">
+        <button onclick="checkPassword()">Submit</button>
+    </div>
+
+    <!-- Game Content -->
+    <div id="game-container" class="max-w-4xl mx-auto p-4 md:p-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6 text-slate-900">Negotiation Gauntlet</h1>
+
+        <!-- Scenario Selection Screen -->
+        <div id="scenario-selection" class="text-center">
+            <h2 class="text-2xl font-semibold mb-4">Choose Your Challenge</h2>
+            <div id="scenario-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Scenarios will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="game-screen" class="hidden">
+            <div id="scenario-briefing" class="mb-6 p-6 rounded-lg shadow-md bg-white">
+                <h2 id="scenario-title" class="text-2xl font-bold mb-3"></h2>
+                <p id="scenario-context" class="mb-4"></p>
+                <div class="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                    <h3 class="font-bold text-blue-800">Your Goal</h3>
+                    <p id="scenario-goal" class="text-blue-700"></p>
+                </div>
+            </div>
+
+            <!-- Analysis & Strategy Section -->
+            <div id="strategy-phase" class="mb-6 p-6 rounded-lg shadow-md bg-white">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Strategy & Analysis</h2>
+                <div class="flex justify-center mb-4 border border-slate-200 rounded-lg p-1 bg-slate-50">
+                    <button id="player-perspective-btn" class="perspective-switch-btn flex-1 p-2 rounded-md text-sm font-medium active">Your Perspective</button>
+                    <button id="counterpart-perspective-btn" class="perspective-switch-btn flex-1 p-2 rounded-md text-sm font-medium">Counterpart's Perspective</button>
+                </div>
+                
+                <div id="player-perspective">
+                    <div class="mb-4">
+                        <label for="player-batna" class="block font-semibold mb-1">Define Your BATNA (Best Alternative to a Negotiated Agreement):</label>
+                        <p id="player-batna-text" class="text-sm text-slate-600 p-3 bg-slate-50 rounded-md"></p>
+                    </div>
+                    <div>
+                        <label for="player-zopa" class="block font-semibold mb-1">Define Your ZOPA (Zone of Possible Agreement):</label>
+                        <div class="flex space-x-4 text-sm">
+                            <div class="flex-1 p-3 bg-red-50 text-red-700 rounded-md"><strong>Walk-away Point:</strong> <span id="player-zopa-walkaway"></span></div>
+                            <div class="flex-1 p-3 bg-green-50 text-green-700 rounded-md"><strong>Target:</strong> <span id="player-zopa-target"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="counterpart-perspective" class="hidden">
+                    <div class="mb-4">
+                        <label for="counterpart-batna" class="block font-semibold mb-1">Estimate Counterpart's BATNA:</label>
+                        <p id="counterpart-batna-text" class="text-sm text-slate-600 p-3 bg-slate-50 rounded-md"></p>
+                    </div>
+                    <div>
+                        <label for="counterpart-interests" class="block font-semibold mb-1">Primary Interests:</label>
+                        <p id="counterpart-interests-text" class="text-sm text-slate-600 p-3 bg-slate-50 rounded-md"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Negotiation Phase -->
+            <div id="negotiation-phase" class="p-6 rounded-lg shadow-md bg-white">
+                <h2 class="text-xl font-bold mb-4 border-b pb-2">Negotiation</h2>
+                <div id="negotiation-log" class="h-64 overflow-y-auto p-4 mb-4 bg-slate-50 rounded-md border">
+                    <!-- Log entries will be added here -->
+                </div>
+                <div id="player-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Option buttons will be added here -->
+                </div>
+            </div>
+            <button id="back-to-menu" class="w-full mt-6 text-center btn bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Back to Main Menu</button>
+        </div>
+
+        <!-- Outcome Screen -->
+        <div id="outcome-screen" class="hidden text-center p-8 rounded-lg shadow-lg bg-white">
+            <h2 id="outcome-title" class="text-3xl font-bold mb-4"></h2>
+            <p id="outcome-summary" class="text-lg mb-6"></p>
+            <div class="p-6 rounded-lg bg-gray-50 border mb-6">
+                <h3 class="text-xl font-bold mb-3 text-gray-800">Debrief & Analysis</h3>
+                <p id="outcome-debrief" class="text-left text-gray-600"></p>
+            </div>
+            <button id="play-again" class="btn bg-blue-500 text-white font-bold py-3 px-6 rounded-lg">Play Another Scenario</button>
+        </div>
+    </div>
+
+    <script>
+        // Password Protection Logic
+        const correctPassword = "Logintogame$398";
+        function checkPassword() {
+            const input = document.getElementById("password-input").value;
+            if (input === correctPassword) {
+                document.getElementById("password-container").style.display = "none";
+                document.getElementById("game-container").style.display = "block";
+            } else {
+                alert("Incorrect password!");
+            }
+        }
+
+        // --- DATA ---
+        const scenarios = [
+            {
+                id: 'salary',
+                title: 'The Salary Standoff',
+                context: "You are a skilled software developer with 5 years of experience. You've received a job offer from 'Innovate Inc.' for a senior role. They are your top choice, but the initial salary offer seems a bit low.",
+                goal: "Negotiate a higher salary that reflects your skills and market value, without kindizing the job offer.",
+                player: {
+                    batna: "Accept a competing offer from 'Future Systems' for $92,000 per year.",
+                    zopa: { walkaway: "$93,000", target: "$105,000" },
+                    info: { initialOffer: 90000, marketRate: "95k-110k" }
+                },
+                counterpart: {
+                    name: "Alex, the Hiring Manager",
+                    batna: "Hire another qualified candidate. They have one other strong contender but prefer you.",
+                    interests: "Sticking to the approved budget for the role (max $100k salary), but also securing top talent to lead a critical project.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "Alex from Innovate Inc. has offered you a salary of $90,000. How do you respond?",
+                        options: [
+                            { text: "Accept the $90,000 offer immediately.", outcome: 'bad' },
+                            { text: "Counter-offer at $110,000, citing your experience and market research.", next: 'counter_high' },
+                            { text: "Express enthusiasm, but ask if the salary is flexible.", next: 'ask_flexible' },
+                            { text: "Inquire about the total compensation package, not just salary.", next: 'ask_package'}
+                        ]
+                    },
+                    ask_flexible: {
+                        response: "Alex says, 'We think the offer is competitive, but we're open to discussion for the right candidate. What did you have in mind?'",
+                        options: [
+                            { text: "Propose $105,000, explaining it aligns with your market value and competing offers.", next: 'propose_105k' },
+                            { text: "Say you were hoping for 'more' without giving a number.", next: 'vague_more' },
+                        ]
+                    },
+                    ask_package: {
+                        response: "Alex replies, 'Good question. We offer a 4% 401k match, standard health insurance, and a potential annual performance bonus of up to 10%.'",
+                        options: [
+                            { text: "Acknowledge the benefits, then counter on salary at $105,000.", next: 'propose_105k' },
+                            { text: "Focus on the bonus: 'Can we guarantee a 10% bonus for the first year?'", next: 'ask_guaranteed_bonus' },
+                        ]
+                    },
+                    counter_high: {
+                        response: "Alex sounds surprised. 'That's significantly above our approved budget for this role. The absolute maximum salary we can offer is $100,000.' This is a firm signal of a hard constraint.",
+                        options: [
+                            { text: "Accept the $100,000.", outcome: 'good' },
+                            { text: "Hold firm at $110,000.", outcome: 'bad_firm' },
+                            { text: "Pivot: 'I understand budget constraints. If $100k is the max, can we discuss a signing bonus?'", next: 'pivot_bonus' }
+                        ]
+                    },
+                    vague_more: {
+                        response: "Alex seems a bit impatient. 'I need a specific number to take to my director. We can't proceed without a concrete counter-offer.'",
+                        options: [
+                            { text: "Propose $105,000.", next: 'propose_105k' },
+                            { text: "Apologize and accept the $90,000.", outcome: 'bad' }
+                        ]
+                    },
+                    propose_105k: {
+                        response: "Alex considers this. 'I appreciate your perspective, but I have to be transparent: our hard cap on salary for this role is $100,000. It's a strict budget limitation.'",
+                        options: [
+                            { text: "Accept the $100,000.", outcome: 'good' },
+                            { text: "Pivot: 'Given the salary cap, could we explore other areas, like a one-time signing bonus?'", next: 'pivot_bonus' },
+                            { text: "Argue that your skills are worth more than the cap.", outcome: 'bad_firm'}
+                        ]
+                    },
+                    pivot_bonus: {
+                        response: "Alex sounds interested. 'A signing bonus is handled by a different budget. That's a creative solution. We could offer a $5,000 signing bonus with the $100,000 salary.'",
+                        options: [
+                            { text: "Accept the $100k salary and $5k bonus.", outcome: 'excellent' },
+                            { text: "Push for a $10k bonus.", outcome: 'ok_pushy'}
+                        ]
+                    },
+                    ask_guaranteed_bonus: {
+                        response: "Alex hesitates. 'Guarantees are tough. The bonus is performance-based company-wide. But... I might be able to get a guaranteed minimum of 5% for your first year approved. What if we do that with a $98,000 salary?'",
+                        options: [
+                            { text: "Accept the $98k salary and 5% guaranteed bonus.", outcome: 'excellent_alt' },
+                            { text: "Decline, and push for the $100k salary instead.", next: 'propose_105k' }
+                        ]
+                    },
+                    outcomes: {
+                        bad: { title: "Deal Accepted: Sub-Optimal", summary: "You accepted the initial offer of $90,000.", debrief: "While you secured the job, you likely left significant money on the table. Your BATNA was $92,000, so accepting less was a poor move. Game theory suggests you should always try to negotiate an offer, especially when your BATNA is strong." },
+                        bad_firm: { title: "Offer Rescinded", summary: "You argued against their budget constraints and they decided to go with another candidate.", debrief: "Your aggressive stance and unwillingness to accept their stated constraint was perceived as difficult. When a counterpart signals a hard, non-negotiable limit, continuing to push on that same point is often fruitless. The better strategy is to pivot and find other sources of value." },
+                        ok_pushy: { title: "Deal Accepted: Good, but...", summary: "You accepted $100k and a $5k bonus, but pushing for more at the end created some friction.", debrief: "You achieved a great result! However, pushing after they presented a creative solution can sometimes feel like 'nickel-and-diming'. In repeated games (like employment), preserving the relationship is key. Still, a great outcome." },
+                        good: { title: "Deal Accepted: Good Outcome", summary: "You successfully negotiated a salary of $100,000.", debrief: "A strong result. You successfully pushed them to the top of their salary band. You identified their limit and secured it, which is a solid win. You met your walk-away point and got a fair market salary." },
+                        excellent: { title: "Deal Accepted: Excellent Outcome!", summary: "You negotiated a $100,000 salary plus a $5,000 signing bonus!", debrief: "A masterful negotiation! When you hit their hard limit on salary, you didn't give up. Instead, you pivoted to a new, negotiable issue (signing bonus) that drew from a different pool of money. This is a classic 'expanding the pie' strategy." },
+                        excellent_alt: { title: "Deal Accepted: Excellent Alternative Outcome!", summary: "You secured a $98,000 salary and a 5% guaranteed bonus.", debrief: "Fantastic creative negotiating! You identified another variable (bonus certainty) and traded a small amount of base salary for guaranteed money, reducing your risk. This integrative approach created a unique package that worked for both sides." }
+                    }
+                }
+            },
+            {
+                id: 'merger',
+                title: 'The Merger Maze',
+                context: "You are the CEO of 'TechLeap', a promising startup. 'MegaCorp', a massive corporation, wants to acquire your company. You believe the deal could be huge for your technology, but you're worried about losing your company's culture and vision.",
+                goal: "Negotiate a favorable acquisition deal that maximizes financial value while securing key non-financial terms, like a leadership role for yourself and autonomy for your team.",
+                player: {
+                    batna: "Secure a new round of Venture Capital funding and remain an independent company.",
+                    zopa: { walkaway: "$150M + team autonomy", target: "$200M + CEO role of the new division" },
+                },
+                counterpart: {
+                    name: "Ms. Vance, MegaCorp's VP of Acquisitions",
+                    batna: "Acquire a competing startup, 'Innovate Solutions', though their tech is less advanced.",
+                    interests: "Quickly acquiring your unique technology to beat competitors to market. Appearing strong and decisive to the MegaCorp board.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "Ms. Vance opens with a cash offer of $130M and standard integration terms. How do you respond?",
+                        options: [
+                            { text: "Reject the offer outright as too low.", next: 'reject_outright'},
+                            { text: "Focus on the non-financial issues first: ask about your role and team autonomy.", next: 'focus_non_financial' },
+                            { text: "Counter with $220M, focusing only on the price.", next: 'counter_price_only' },
+                        ]
+                    },
+                    reject_outright: {
+                        response: "Ms. Vance seems offended. 'That's a very strong offer. Perhaps we've misjudged your seriousness. We may need to reconsider our options.' This creates a tense atmosphere.",
+                        options: [
+                            { text: "Apologize and shift to non-financials.", next: 'focus_non_financial' },
+                            { text: "Stand your ground.", outcome: 'bad_deal_fails' },
+                        ]
+                    },
+                    focus_non_financial: {
+                        response: "Ms. Vance is intrigued. 'An interesting move. We are flexible on structure for the right partnership. We could offer you a Senior Director role and keep your team as a semi-autonomous unit. With that in mind, can we agree on a price closer to $160M?'",
+                        options: [
+                            { text: " Agree to $160M with those terms.", outcome: 'good_merger' },
+                            { text: "Push for the CEO title and $180M.", next: 'push_ceo' },
+                            { text: "Table the price. Propose an earn-out structure based on performance.", next: 'propose_earnout' }
+                        ]
+                    },
+                    counter_price_only: {
+                        response: "Ms. Vance is dismissive. 'The price is only one part of the equation. Without structural agreement, a high price is a non-starter. We can't go above $150M under our standard acquisition terms.'",
+                        options: [
+                            { text: "Accept $150M and standard terms.", outcome: 'ok_merger' },
+                            { text: "Introduce non-financial issues now.", next: 'focus_non_financial' },
+                        ]
+                    },
+                    push_ceo: {
+                        response: "Ms. Vance smiles. 'You drive a hard bargain. The CEO title for the new division is possible. Let's settle at $175M and we have a deal.'",
+                        options: [
+                            { text: "Accept the deal.", outcome: 'excellent_merger' }
+                        ]
+                    },
+                    propose_earnout: {
+                        response: "Ms. Vance leans forward, very interested. 'An earn-out mitigates our risk. We could agree to a $150M upfront payment, plus an additional $50M if your division hits its targets in two years. And we can give you the CEO title to ensure you hit those targets.'",
+                        options: [
+                            { text: "Accept the earn-out structure.", outcome: 'excellent_merger_alt' },
+                            { text: "Reject the earn-out and return to a fixed-price discussion.", next: 'push_ceo' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_deal_fails: { title: "Deal Failed", summary: "The negotiation broke down and MegaCorp is pursuing their BATNA.", debrief: "An aggressive, zero-sum approach to a multi-issue negotiation is rarely effective. By focusing only on your position and not exploring underlying interests, you created a deadlock." },
+                        ok_merger: { title: "Deal Accepted: Okay Outcome", summary: "You sold for $150M under standard terms.", debrief: "You secured a price that was acceptable, but you failed to create value with the non-financial issues. This distributive approach left value on the table." },
+                        good_merger: { title: "Deal Accepted: Good Outcome", summary: "You sold for $160M and secured team autonomy and a Director role.", debrief: "A solid outcome. By addressing interests instead of just positions (price), you expanded the pie. This is a classic integrative bargaining strategy." },
+                        excellent_merger: { title: "Deal Accepted: Excellent Outcome!", summary: "You sold for $175M and secured the CEO title and team autonomy!", debrief: "Outstanding! You correctly identified that the negotiation was not just about price and used that to build rapport and find creative solutions." },
+                        excellent_merger_alt: { title: "Deal Accepted: Excellent (High-Risk) Outcome!", summary: "You secured $150M upfront, the CEO title, and a potential $50M earn-out.", debrief: "A brilliant, high-risk, high-reward play. You deferred some of the payment to align interests perfectly. If you are confident in your team's ability to perform, you stand to gain the most from this deal, and Ms. Vance gets to justify the acquisition based on performance. This is expert-level integrative bargaining." }
+                    }
+                }
+            },
+            {
+                id: 'freelancer',
+                title: "The Freelancer's Fee",
+                context: "You are a freelance web designer negotiating a full website redesign for 'The Cozy Bean', a local coffee shop. The owner, Sam, has a limited budget but high hopes for the new site.",
+                goal: "Secure a contract that fairly compensates you for your work while accommodating the client's budget constraints, possibly by adjusting the project scope.",
+                player: {
+                    batna: "Start a project with a different, less exciting client next month for a guaranteed $5,000.",
+                    zopa: { walkaway: "$4,500 for the full scope", target: "$6,500" },
+                },
+                counterpart: {
+                    name: "Sam, the Cafe Owner",
+                    batna: "Use a DIY website builder or hire a cheaper, less experienced designer from a gig platform.",
+                    interests: "Getting a beautiful, functional website to attract more customers, but staying within a very tight budget.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "After a great discussion, Sam loves your portfolio but says, 'My total budget for this is $3,500. Can you make that work?'",
+                        options: [
+                            { text: "Decline, stating your minimum for this scope is much higher.", outcome: 'bad_freelance' },
+                            { text: "Immediately agree to $3,500 to secure the job.", outcome: 'bad_accept_low' },
+                            { text: "Counter with $7,000, explaining the value you bring.", next: 'counter_high_freelance' },
+                            { text: "Propose adjusting the scope to fit the budget.", next: 'propose_scope_change' }
+                        ]
+                    },
+                    counter_high_freelance: {
+                        response: "Sam looks disheartened. 'Wow, that's more than double my budget. I don't think I can make that work. I might have to look at other options.'",
+                        options: [
+                            { text: "Offer to reduce the scope to find a middle ground.", next: 'propose_scope_change' },
+                            { text: "Hold firm on your price.", outcome: 'bad_freelance' },
+                        ]
+                    },
+                    propose_scope_change: {
+                        response: "Sam seems relieved. 'I'm open to that! What did you have in mind?' This signals an interest in a cooperative, non-zero-sum solution.",
+                        options: [
+                            { text: "Suggest a phased approach: build the core site now for $4,800, and add advanced features later.", next: 'phase_approach' },
+                            { text: "Offer to remove some time-consuming features (like an integrated blog) to meet a $5,500 price point.", next: 'feature_removal' },
+                        ]
+                    },
+                    phase_approach: {
+                        response: "Sam loves the idea. 'That's brilliant! $4,800 is doable for the main site. It lets me get online now and improve later. It's a deal!'",
+                        options: [
+                            { text: "Finalize the deal.", outcome: 'excellent_freelance' }
+                        ]
+                    },
+                    feature_removal: {
+                        response: "Sam considers it. 'I see. I really wanted the blog... but getting the main site right is the priority. Okay, $5,500 is a stretch, but let's do it.'",
+                        options: [
+                            { text: "Finalize the deal.", outcome: 'good_freelance' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_freelance: { title: "Deal Failed", summary: "You couldn't agree on a price and decided to part ways.", debrief: "By sticking to a single issue (price), you engaged in distributive bargaining and found no ZOPA. The client's budget constraint was real, and your failure to explore creative, value-adding solutions (like changing the scope) meant you both walked away with your BATNAs, which was a worse outcome for both parties." },
+                        bad_accept_low: { title: "Deal Accepted: Underpaid", summary: "You accepted $3,500, which is far below your market rate and walk-away point.", debrief: "You panicked and accepted an offer far below your BATNA. This is a common mistake. Always remember your walk-away point and be prepared to use it. You left a significant amount of money on the table." },
+                        good_freelance: { title: "Deal Accepted: Good Compromise", summary: "You agreed on a price of $5,500 with a slightly reduced scope.", debrief: "This was a successful integrative negotiation. You identified that price was not the only variable and created value by adjusting the scope. Both parties got what they wanted: the client got a great website within a manageable budget, and you secured a well-paid project." },
+                        excellent_freelance: { title: "Deal Accepted: Excellent Partnership!", summary: "You agreed to a phased project, starting with a $4,800 core website.", debrief: "This is a masterful non-zero-sum solution. You didn't just compromise; you created a new option that perfectly met both parties' needs. The client solves their immediate problem within budget, and you secure a good project with the high probability of future work. This builds a long-term relationship, the hallmark of an expert negotiator." }
+                    }
+                }
+            },
+            {
+                id: 'vendor_contract',
+                title: 'The Vendor Vendetta',
+                context: "You are a manager at a mid-sized company, responsible for renewing the contract for a critical software vendor, 'SynthoSoft'. They have just announced a mandatory 25% price increase across the board for all clients.",
+                goal: "Minimize the price increase or, failing that, gain significant additional value (features, support) for the new price.",
+                player: {
+                    batna: "Migrate to 'CompetiCore', a rival software. The migration would be costly and take 6 months, but is a viable long-term option.",
+                    zopa: { walkaway: "Accept a >15% increase with no added value", target: "Keep increase < 5% OR get the 'Premium Support' package included at the new price." },
+                },
+                counterpart: {
+                    name: "Jordan, your SynthoSoft Account Rep",
+                    batna: "Lose your account, which is a significant loss of recurring revenue and a bad signal to other clients.",
+                    interests: "Enforcing the new company-wide pricing policy, hitting their renewal quota, and not appearing weak by making exceptions.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "Jordan from SynthoSoft informs you of the 25% price increase for your renewal. 'It's a company-wide policy reflecting our new R&D investments,' he says.",
+                        options: [
+                            { text: "Accept the price increase without comment.", outcome: 'bad_vendor' },
+                            { text: "Threaten to leave for a competitor if the price isn't lowered.", next: 'threaten_batna' },
+                            { text: "Ask for a detailed justification of the new value that warrants a 25% hike.", next: 'ask_justification' },
+                        ]
+                    },
+                    threaten_batna: {
+                        response: "Jordan sounds concerned. 'We would hate to lose you as a client. The migration process to a competitor can be very painful. Are you sure you want to go that route? Perhaps we can discuss ways to add more value to your contract.'",
+                        options: [
+                            { text: "Bluff and say you're leaving unless the price drops.", outcome: 'risky_bluff' },
+                            { text: "Use this opening to pivot to adding value.", next: 'pivot_to_value' },
+                        ]
+                    },
+                    ask_justification: {
+                        response: "Jordan provides a list of new features, most of which your team doesn't need. 'We've added a lot of value this year,' he says confidently.",
+                        options: [
+                            { text: "Point out that most new features are irrelevant to your team's needs.", next: 'features_irrelevant' },
+                            { text: "Accept his justification and pay the new price.", outcome: 'bad_vendor' },
+                        ]
+                    },
+                    pivot_to_value: {
+                        response: "'What kind of value did you have in mind?' Jordan asks, now in a more collaborative mode.",
+                        options: [
+                            { text: "Demand the 'Premium Support' package and a 2-year contract lock at the new price.", outcome: 'excellent_vendor' },
+                            { text: "Ask for a small 10% discount from the new price.", outcome: 'ok_vendor' }
+                        ]
+                    },
+                    features_irrelevant: {
+                        response: "Jordan seems a bit stuck. 'I see your point. The price is firm, but for a key client like you, maybe I can get something extra approved. What if we include the 'Premium Support' package for you at the new price?'",
+                        options: [
+                            { text: "Accept this offer.", outcome: 'good_vendor' },
+                            { text: "Reject it and demand a lower price.", outcome: 'risky_bluff' },
+                        ]
+                    },
+                    outcomes: {
+                        bad_vendor: { title: "Deal Accepted: High Cost", summary: "You accepted the full 25% price increase.", debrief: "You accepted their first offer. In any negotiation, especially with a long-term vendor, you have leverage. Your BATNA (switching vendors) was strong, even if costly. You failed to explore their interests (keeping you as a client) and left significant value on the table." },
+                        ok_vendor: { title: "Deal Accepted: Minor Discount", summary: "You got a small 10% discount from the new, higher price.", debrief: "You got a small concession, which is better than nothing. However, you focused only on price (distributive bargaining) when you could have expanded the pie by discussing other forms of value (integrative bargaining). You likely could have achieved more." },
+                        risky_bluff: { title: "Deal Failed: They Called Your Bluff", summary: "You pushed too hard on price, and they regretfully accepted your decision to leave.", debrief: "Leveraging your BATNA is smart, but turning it into an ultimatum is risky. They may be forced to call your bluff to avoid setting a precedent for other clients. This hardball tactic turned a non-zero-sum game into a zero-sum conflict, and you both lost." },
+                        good_vendor: { title: "Deal Accepted: Great Value!", summary: "You agreed to the new price but got their valuable 'Premium Support' package for free.", debrief: "Excellent work. You successfully reframed the negotiation from price to value. By demonstrating that their justification for the price hike didn't apply to you, you pushed them to find another way to make the deal fair. This is a classic integrative strategy: expanding the pie." },
+                        excellent_vendor: { title: "Deal Accepted: Masterful Control!", summary: "You leveraged your BATNA to secure the 'Premium Support' package AND lock in the price for 2 years.", debrief: "A perfect negotiation. You calmly signaled your strong BATNA without making it a hostile threat. This opened the door for a collaborative, problem-solving discussion. You not only added value for this year but also eliminated future uncertainty, a huge win for your company." }
+                    }
+                }
+            },
+            {
+                id: 'hostage',
+                title: 'The Internal Hostage',
+                context: "You are a Project Manager for the critical 'Phoenix Project'. Your project's success hinges on getting a key software component from an internal department, headed by David. David's department is under pressure to cut costs.",
+                goal: "Secure the component you need without your project budget being massively inflated by David's 'transfer cost', which could kill your project.",
+                player: {
+                    batna: "Attempt to build the component in-house, causing a 3-month delay and potential failure. Or, cancel the project.",
+                    zopa: { walkaway: "A transfer cost greater than $75k", target: "A cost below $30k, or a non-financial trade." },
+                },
+                counterpart: {
+                    name: "David, Head of Internal Tools",
+                    batna: "Keep his high-cost resource on the books, failing to meet his cost-cutting target for the quarter.",
+                    interests: "His stated interest is 'recovering costs'. His hidden interest is offloading a difficult, high-salary employee ('Bob') who is assigned to this component.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "You meet with David. He says, 'We can provide the component, but given our budget pressures, we need to implement a resource transfer cost of $100,000 to your project.' This would cripple your budget.",
+                        options: [
+                            { text: "Accuse him of playing politics and trying to kill your project.", outcome: 'bad_hostage' },
+                            { text: "Ask for a detailed cost breakdown.", next: 'ask_breakdown' },
+                            { text: "Reveal your weak BATNA (project delay/cancellation) to plead for mercy.", outcome: 'bad_reveal_batna' },
+                            { text: "Go over his head to his boss.", outcome: 'bad_escalate' }
+                        ]
+                    },
+                    ask_breakdown: {
+                        response: "David emails you a spreadsheet. The vast majority of the cost is the salary of one senior engineer, Bob, allocated for 6 months. The cost seems inflated. What now?",
+                        options: [
+                            { text: "Argue that Bob's salary is not your problem.", outcome: 'bad_hostage' },
+                            { text: "Probe about the resource: 'Is Bob critical for this? Are there other ways we can support your department's goals?'", next: 'probe_resource' },
+                            { text: "Counter-offer at $25,000.", next: 'counter_low_hostage' }
+                        ]
+                    },
+                    probe_resource: {
+                        response: "David sighs, a crack in his composure. 'Look, between us, Bob is... difficult. My hands are tied with him. He's on this component. This transfer is my only way to meet my quarterly cost-reduction goal.' This is the key piece of information.",
+                        options: [
+                            { text: "Leverage this: 'What if my project takes Bob permanently? No transfer cost, you meet your goal, I get my component.'", next: 'propose_transfer' },
+                            { text: "Ignore the hint and focus on the price.", next: 'counter_low_hostage' }
+                        ]
+                    },
+                    counter_low_hostage: {
+                        response: "David's walls go back up. 'That's not even worth considering. The cost is the cost. $100,000 or you don't get the component.'",
+                        options: [
+                            { text: "Accept the $100,000.", outcome: 'bad_accept_hostage' },
+                            { text: "Walk away (invoke your BATNA).", outcome: 'bad_batna_hostage'}
+                        ]
+                    },
+                    propose_transfer: {
+                        response: "David is stunned, then smiles. 'You're a clever negotiator. You take Bob off my hands permanently, and you can have the component. No cost. You've just solved my biggest headache.'",
+                        options: [
+                            { text: "Agree to the deal.", outcome: 'excellent_hostage' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_hostage: { title: "Deal Failed: Internal War", summary: "The negotiation became hostile and David refused to provide the component.", debrief: "You treated this like a zero-sum battle. In internal negotiations, relationship capital is key. An aggressive approach created a feud, and now both your projects will likely suffer. You failed to uncover the hidden, shared interests." },
+                        bad_reveal_batna: { title: "Costly Deal: They Knew You Were Desperate", summary: "After revealing your weak position, David held firm and you were forced to pay $95,000.", debrief: "Revealing a very weak BATNA is almost always a mistake. It removes all incentive for the other party to concede. Your desperation signal gave your counterpart all the power in the negotiation." },
+                        bad_accept_hostage: { title: "Costly Deal: Project in Peril", summary: "You agreed to the $100,000 transfer cost, putting your project over budget and at risk.", debrief: "You capitulated to a hardball tactic without probing for the interests behind the position. The price was just a symptom of the problem; you failed to diagnose the underlying disease (the difficult employee)." },
+                        bad_batna_hostage: { title: "Deal Failed: Project Delayed", summary: "You walked away and are now attempting to build the component yourself, delaying the project by months.", debrief: "Invoking your BATNA was an option, but not the best one. A deal was possible if you had dug deeper. A suboptimal outcome that could have been avoided with better information gathering." },
+                        bad_escalate: { title: "Deal Failed: You Made An Enemy", summary: "You went over David's head. His boss forced him to give you the component, but your relationship is destroyed.", debrief: "You 'won' the battle but lost the war. Escalating a conflict is a risky move that should only be a last resort. You've damaged your internal network and made a powerful enemy, which will have long-term consequences for future projects." },
+                        excellent_hostage: { title: "Excellent Deal: Problem Solved!", summary: "You agreed to take on the difficult employee in exchange for the component at no cost.", debrief: "This was a masterstroke of integrative bargaining. You looked past the monetary demand and uncovered the true interest: David didn't want the money, he wanted to get rid of a problem. You absorbed his problem (a risky but manageable move) and in exchange, got exactly what you needed, saving your project. You didn't just split the difference, you redefined the problem to create a novel, win-win solution." }
+                    }
+                }
+            },
+            {
+                id: 'community',
+                title: 'The Community Conflict',
+                context: "You are a local resident leading a group advocating for a new community park on a vacant city-owned lot. You're at a town hall meeting with several other stakeholders who have different plans for the lot.",
+                goal: "Build a winning coalition to get a version of your park plan approved, even if it means making significant compromises.",
+                player: {
+                    batna: "The lot remains vacant and unused for another year, achieving nothing.",
+                    zopa: { walkaway: "Any plan with no green space", target: "A large community park with gardens and a playground." },
+                },
+                counterpart: {
+                    name: "Multiple Stakeholders",
+                    batna: "Maintain the status quo (vacant lot) or ally with another group.",
+                    interests: "A property developer wants profits from condos. A business owner wants more parking for customers. A city council member wants a 'win' for their re-election campaign.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "The meeting begins. The property developer, Ms. Sterling, presents a plan for luxury condos. The business owner, Mr. Gable, argues for a parking lot. How do you open?",
+                        options: [
+                            { text: "Present your full park plan, highlighting the flaws in their ideas.", next: 'present_full_plan' },
+                            { text: "Publicly attack the developer's 'greedy' plan.", outcome: 'bad_community_attack' },
+                            { text: "Approach the business owner privately first. 'Can we find a solution that helps us both?'", next: 'approach_owner' },
+                            { text: "Ask the City Council member what kind of project is most likely to get city support.", next: 'ask_council' }
+                        ]
+                    },
+                    present_full_plan: {
+                        response: "You present your ideal park. Ms. Sterling argues it generates no revenue. Mr. Gable says it doesn't solve the parking problem. The negotiation is deadlocked, three-way.",
+                        options: [
+                            { text: "Try to ally with Mr. Gable against the developer.", next: 'approach_owner' },
+                            { text: "Give up.", outcome: 'bad_community_stalemate' }
+                        ]
+                    },
+                    approach_owner: {
+                        response: "Mr. Gable is receptive. 'I'm not against a park, but my customers have nowhere to park. If you can solve that, you might have my support.'",
+                        options: [
+                            { text: "Propose a revised plan: a smaller park with an adjacent public parking lot.", next: 'propose_compromise' },
+                            { text: "Insist on a 'park only' plan, alienating him.", next: 'present_full_plan' }
+                        ]
+                    },
+                    ask_council: {
+                        response: "Councilperson Diaz says, 'Frankly, I need a solution that makes the most people happy. A project with multiple supporters is easier for me to back. A lone-wolf plan is tough.' This is a clear signal to build a coalition.",
+                        options: [
+                            { text: "Heeding the advice, you approach Mr. Gable to find common ground.", next: 'approach_owner' },
+                            { text: "Ignore the advice and present your sole plan.", next: 'present_full_plan' },
+                        ]
+                    },
+                    propose_compromise: {
+                        response: "You present the joint 'Park & Parking' plan. With both your group and the business owner's support, Councilperson Diaz sees a viable coalition. Ms. Sterling, the developer, is now isolated and objects loudly.",
+                        options: [
+                            { text: "Hold firm with your new coalition and push for a vote.", outcome: 'good_community' },
+                            { text: "Offer the developer a small concession, like naming rights, to get unanimous support.", outcome: 'excellent_community' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_community_attack: { title: "Coalition Against You", summary: "Your aggressive attack caused the developer and business owner to ally against you, and your plan was rejected.", debrief: "In multi-party negotiations, attacking one party can force them into the arms of another. You created a powerful blocking coalition against yourself. Persuasion and coalition-building are more effective than aggression." },
+                        bad_community_stalemate: { title: "Stalemate: No Deal", summary: "You failed to build a coalition, and no plan could get majority support. The lot remains vacant.", debrief: "You reached your BATNA, which was a failure for everyone. You treated the negotiation as a series of two-party debates instead of a dynamic, multi-party game. The key was to find a partner, not to win every argument." },
+                        good_community: { title: "Victory by Coalition!", summary: "Your 'Park & Parking' plan was approved over the developer's objections.", debrief: "A strong outcome! You correctly identified the need for a coalition and made a strategic compromise to build one. You secured a 'good enough' deal by sacrificing part of your ideal plan to gain a powerful ally. This is the essence of multi-party negotiation." },
+                        excellent_community: { title: "Consensus Victory!", summary: "The 'Park & Parking' plan was approved with unanimous support after a small concession to the developer.", debrief: "Masterful work. Not only did you build a winning coalition, but you also made a final, low-cost concession to appease the opposition. This creates a more stable, long-term outcome with broader community buy-in and makes you look like a skilled leader. You didn't just win, you united the group." }
+                    }
+                }
+            },
+            {
+                id: 'ip_dispute',
+                title: 'The IP Infringement',
+                context: "You co-founded a small software company, 'PixelPerfect'. A tech giant, 'Goliath Corp', just launched a new product with a key feature that is almost identical to one protected by your patent.",
+                goal: "Negotiate a settlement that compensates your company for the infringement without getting trapped in a financially draining lawsuit you can't win.",
+                player: {
+                    batna: "File a lawsuit. This would be incredibly expensive and take years, with a low chance of success against their army of lawyers, but it's your only leverage.",
+                    zopa: { walkaway: "A one-time payment below $1M.", target: "A licensing deal worth $5M over 3 years OR a one-time payment of $10M." },
+                },
+                counterpart: {
+                    name: "Mr. Kane, Goliath's Head of Legal",
+                    batna: "Fight you in court. They expect to win, but the lawsuit would be a costly distraction and a minor PR headache.",
+                    interests: "Making the problem 'go away' as cheaply and quietly as possible. Avoiding setting a precedent of paying out large sums for patent claims.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "You send a cease-and-desist letter. Mr. Kane from Goliath Corp calls you. 'We received your letter. Our position is that our product does not infringe on your patent. However, to avoid the nuisance of litigation, we can offer you a one-time payment of $500,000 to resolve this matter.'",
+                        options: [
+                            { text: "Reject the offer as insulting and threaten to sue immediately.", next: 'threaten_lawsuit' },
+                            { text: "Accept the $500,000.", outcome: 'bad_ip' },
+                            { text: "Propose a different framework: a long-term licensing agreement instead of a one-time payment.", next: 'propose_license' },
+                            { text: "Ask for their legal analysis on why they believe there's no infringement.", next: 'ask_analysis' }
+                        ]
+                    },
+                    threaten_lawsuit: {
+                        response: "Mr. Kane's tone becomes icy. 'As is your right. Our legal team is more than prepared. This will be our final offer before we move to discovery. Think carefully.' This is a game of chicken.",
+                        options: [
+                            { text: "Back down and accept the $500k.", outcome: 'bad_ip' },
+                            { text: "Follow through and file the lawsuit.", outcome: 'bad_lawsuit' },
+                            { text: "Pivot to a licensing discussion.", next: 'propose_license' }
+                        ]
+                    },
+                    propose_license: {
+                        response: "Mr. Kane is silent for a moment. 'A licensing deal is... an interesting proposition. It's not our standard practice. It implies the validity of your claim. How would you envision such a deal?'",
+                        options: [
+                            { text: "Propose a 2% royalty on their product sales.", next: 'propose_royalty' },
+                            { text: "Suggest a fixed fee of $2M per year for three years.", outcome: 'good_ip' }
+                        ]
+                    },
+                    ask_analysis: {
+                        response: "Mr. Kane laughs. 'I'm not going to reveal our legal strategy. The offer stands at $500,000. It's a generous offer to avoid a frivolous suit.'",
+                        options: [
+                            { text: "Threaten to sue.", next: 'threaten_lawsuit' },
+                            { text: "Propose a licensing agreement.", next: 'propose_license' }
+                        ]
+                    },
+                    propose_royalty: {
+                        response: "Mr. Kane immediately rejects it. 'Absolutely not. We will never agree to a royalty. It's an operational nightmare and sets a terrible precedent. We can do a one-time payment, or we can go to court.'",
+                        options: [
+                            { text: "Counter with a fixed payment of $8M.", outcome: 'excellent_ip' },
+                            { text: "Accept their initial $500k offer.", outcome: 'bad_ip' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_ip: { title: "Settlement Reached: Low Value", summary: "You accepted the initial nuisance-value offer of $500,000.", debrief: "You took the first offer in a situation where your BATNA (the threat of a lawsuit), while weak, still had leverage. You left millions on the table by signaling you weren't willing to fight." },
+                        bad_lawsuit: { title: "Lawsuit Filed: A Costly War", summary: "You filed the lawsuit. Goliath's legal team is burying you in motions, and your legal fees are astronomical.", debrief: "You played chicken and didn't swerve. While principled, this was a poor strategic move. Goliath's BATNA (court battle) was stronger than yours. You mistook a negotiation tool for the end goal, and now you're likely to lose everything." },
+                        good_ip: { title: "Settlement Reached: Good Outcome", summary: "You secured a licensing deal worth $6M over 3 years.", debrief: "A very strong outcome. By reframing the negotiation from a one-time payout to a licensing deal, you created a new ZOPA. This allowed them to pay you over time, which may have been easier for their internal accounting, while getting you to your target value." },
+                        excellent_ip: { title: "Settlement Reached: Excellent Outcome!", summary: "After they rejected royalties, you secured a one-time payment of $8,000,000.", debrief: "Masterful. You used the licensing proposal to gauge their interests and discover their true pain point (royalties). When they rejected it, you used that information to pivot back to a one-time payment, but now anchored at a much higher value, which they were willing to accept to avoid the royalty precedent. You identified their hidden interest and exploited it perfectly." }
+                    }
+                }
+            },
+            {
+                id: 'supply_chain',
+                title: 'The Supply Chain Crisis',
+                context: "You are the procurement manager for a company that relies on a single supplier, 'Global Components', for a critical part. Due to a sudden shipping crisis, they've declared force majeure and say your next delivery will be 3 months late, which would shut down your factory.",
+                goal: "Find a way to get the components you need to keep production running, minimizing costs and delays, without destroying your long-term relationship with a critical supplier.",
+                player: {
+                    batna: "Attempt to re-tool and source from a new, unvetted domestic supplier. This will take 2 months and cost $500,000.",
+                    zopa: { walkaway: "A delay longer than 6 weeks.", target: "Components delivered within 2 weeks at no more than 20% cost increase." },
+                },
+                counterpart: {
+                    name: "Chen, your contact at Global Components",
+                    batna: "Sell the components they have to your competitors, who are also desperate. Or, let them sit in a warehouse while they wait for shipping to normalize.",
+                    interests: "Maintaining a good relationship with you (a major client). Fulfilling as many orders as possible. Not losing money on a crisis they didn't cause.",
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "Chen from Global Components calls with the bad news: the shipment is stuck, and the new ETA is 3 months. 'Our hands are tied, this is a force majeure event,' he says apologetically.",
+                        options: [
+                            { text: "Demand they honor the contract and threaten legal action.", outcome: 'bad_supply_legal' },
+                            { text: "Acknowledge the difficulty and ask, 'What creative options can we explore together to solve this problem?'", next: 'ask_creative' },
+                            { text: "Immediately start the process of switching to your domestic supplier (invoke your BATNA).", outcome: 'bad_supply_batna' }
+                        ]
+                    },
+                    ask_creative: {
+                        response: "Chen sounds relieved. 'Thank you for understanding. I'm open to ideas. We have the components, we just can't send them affordably. Air freight is an option, but it would add a 50% surcharge to your cost.'",
+                        options: [
+                            { text: "Accept the 50% surcharge to get the parts now.", outcome: 'ok_supply' },
+                            { text: "Reject the surcharge and demand they cover the cost.", next: 'demand_cover' },
+                            { text: "Propose to split the air freight cost (a 25% surcharge for you).", outcome: 'good_supply' },
+                            { text: "Ask if they can partially send a smaller, critical amount via air now, and the rest later.", next: 'ask_partial' }
+                        ]
+                    },
+                    demand_cover: {
+                        response: "Chen's tone hardens. 'We can't do that. We are already losing money. The 50% surcharge is the best we can do. Otherwise, we can cancel the order and refund you.'",
+                        options: [
+                            { text: "Accept the 50% surcharge.", outcome: 'ok_supply' },
+                            { text: "Walk away.", outcome: 'bad_supply_batna' }
+                        ]
+                    },
+                    ask_partial: {
+                        response: "Chen considers this. 'That's a very good idea. It would keep your line running. We can air-freight 25% of the order now for a more manageable extra cost, say $75,000, and send the rest by sea when things clear up.'",
+                        options: [
+                            { text: "Accept this proposal.", outcome: 'excellent_supply' },
+                            { text: "Counter-offer to pay only $50,000 for the partial air shipment.", outcome: 'good_supply' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_supply_legal: { title: "Relationship Damaged", summary: "You threatened legal action. They have stopped returning your calls and are now dealing with your legal department only.", debrief: "Playing hardball during a shared crisis is a poor move. The force majeure clause likely protects them, and your aggressive stance has destroyed a critical long-term relationship for no gain." },
+                        bad_supply_batna: { title: "Costly Switch", summary: "You walked away and are now spending a fortune to switch suppliers, with significant delays.", debrief: "You invoked your BATNA too early. While having a BATNA is good, using it should be a last resort. A collaborative approach could have yielded a much better, faster, and cheaper result." },
+                        ok_supply: { title: "Deal Made: High Cost", summary: "You paid the full 50% surcharge to get your components via air freight.", debrief: "You solved your immediate problem, but at a very high cost. You failed to explore options to share the burden or find more creative solutions, engaging in positional bargaining where you simply accepted their first offer." },
+                        good_supply: { title: "Deal Made: Fair Compromise", summary: "You negotiated to split the extra shipping costs, or paid a smaller fee for a partial shipment.", debrief: "A solid outcome. You successfully turned a crisis into a collaborative problem-solving session. By proposing to share the costs, you found a fair middle ground that solved both parties' immediate problems and kept the relationship intact." },
+                        excellent_supply: { title: "Deal Made: Creative Solution!", summary: "You proposed a partial air shipment, getting what you need now at a manageable cost, with the rest to follow.", debrief: "This is a masterful negotiation. You didn't just split the difference on cost; you redefined the problem by breaking it into smaller pieces. This creative, integrative solution minimized costs for both parties, solved your critical production issue, and strengthened your relationship with the supplier by demonstrating that you are a valuable, problem-solving partner." }
+                    }
+                }
+            }
+        ];
+
+        // --- DOM Elements ---
+        const gameContainer = document.getElementById('game-container');
+        const scenarioSelection = document.getElementById('scenario-selection');
+        const scenarioList = document.getElementById('scenario-list');
+        const gameScreen = document.getElementById('game-screen');
+        const outcomeScreen = document.getElementById('outcome-screen');
+
+        const scenarioTitle = document.getElementById('scenario-title');
+        const scenarioContext = document.getElementById('scenario-context');
+        const scenarioGoal = document.getElementById('scenario-goal');
+        
+        const playerPerspectiveBtn = document.getElementById('player-perspective-btn');
+        const counterpartPerspectiveBtn = document.getElementById('counterpart-perspective-btn');
+        const playerPerspectiveDiv = document.getElementById('player-perspective');
+        const counterpartPerspectiveDiv = document.getElementById('counterpart-perspective');
+
+        const playerBatna = document.getElementById('player-batna-text');
+        const playerZopaWalkaway = document.getElementById('player-zopa-walkaway');
+        const playerZopaTarget = document.getElementById('player-zopa-target');
+        
+        const counterpartBatna = document.getElementById('counterpart-batna-text');
+        const counterpartInterests = document.getElementById('counterpart-interests-text');
+
+        const negotiationLog = document.getElementById('negotiation-log');
+        const playerOptions = document.getElementById('player-options');
+
+        const outcomeTitle = document.getElementById('outcome-title');
+        const outcomeSummary = document.getElementById('outcome-summary');
+        const outcomeDebrief = document.getElementById('outcome-debrief');
+
+        const playAgainBtn = document.getElementById('play-again');
+        const backToMenuBtn = document.getElementById('back-to-menu');
+
+        // --- Game State ---
+        let currentScenario = null;
+        let currentNodeKey = null;
+
+        // --- Functions ---
+
+        function init() {
+            populateScenarioList();
+            showScreen('scenario-selection');
+            playAgainBtn.addEventListener('click', () => showScreen('scenario-selection'));
+            backToMenuBtn.addEventListener('click', () => showScreen('scenario-selection'));
+            playerPerspectiveBtn.addEventListener('click', () => switchPerspective('player'));
+            counterpartPerspectiveBtn.addEventListener('click', () => switchPerspective('counterpart'));
+        }
+
+        function populateScenarioList() {
+            scenarioList.innerHTML = '';
+            scenarios.forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card p-6 rounded-lg shadow-md text-left cursor-pointer hover:shadow-xl hover:border-blue-500 transition-all';
+                card.innerHTML = `
+                    <h3 class="text-xl font-bold mb-2">${scenario.title}</h3>
+                    <p class="text-sm text-slate-600">${scenario.context.substring(0, 100)}...</p>
+                `;
+                card.addEventListener('click', () => startGame(scenario.id));
+                scenarioList.appendChild(card);
+            });
+        }
+
+        function showScreen(screenId) {
+            scenarioSelection.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            outcomeScreen.classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function startGame(scenarioId) {
+            currentScenario = scenarios.find(s => s.id === scenarioId);
+            currentNodeKey = 'start';
+            setupScenarioUI();
+            updateNegotiationUI();
+            showScreen('game-screen');
+        }
+
+        function setupScenarioUI() {
+            scenarioTitle.textContent = currentScenario.title;
+            scenarioContext.textContent = currentScenario.context;
+            scenarioGoal.textContent = currentScenario.goal;
+
+            // Player Perspective
+            playerBatna.textContent = currentScenario.player.batna;
+            playerZopaWalkaway.textContent = currentScenario.player.zopa.walkaway;
+            playerZopaTarget.textContent = currentScenario.player.zopa.target;
+
+            // Counterpart Perspective
+            counterpartBatna.textContent = currentScenario.counterpart.batna;
+            counterpartInterests.textContent = currentScenario.counterpart.interests;
+
+            negotiationLog.innerHTML = '';
+            switchPerspective('player');
+        }
+        
+        function switchPerspective(perspective) {
+            if (perspective === 'player') {
+                playerPerspectiveDiv.classList.remove('hidden');
+                counterpartPerspectiveDiv.classList.add('hidden');
+                playerPerspectiveBtn.classList.add('active');
+                counterpartPerspectiveBtn.classList.remove('active');
+            } else {
+                playerPerspectiveDiv.classList.add('hidden');
+                counterpartPerspectiveDiv.classList.remove('hidden');
+                playerPerspectiveBtn.classList.remove('active');
+                counterpartPerspectiveBtn.classList.add('active');
+            }
+        }
+
+        function updateNegotiationUI() {
+            const node = currentScenario.negotiationTree[currentNodeKey];
+
+            if (node.response) {
+                addLogEntry(currentScenario.counterpart.name, node.response);
+            } else { // It's the start of the game
+                addLogEntry("System", node.prompt);
+            }
+
+            playerOptions.innerHTML = '';
+            node.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.className = 'option-btn btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg w-full text-left';
+                button.addEventListener('click', () => selectOption(option));
+                playerOptions.appendChild(button);
+            });
+        }
+
+        function selectOption(option) {
+            addLogEntry("You", option.text);
+            disableOptions();
+
+            setTimeout(() => {
+                if (option.outcome) {
+                    endGame(option.outcome);
+                } else {
+                    currentNodeKey = option.next;
+                    updateNegotiationUI();
+                }
+            }, 1200); // Add a small delay for reading
+        }
+        
+        function disableOptions() {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        function addLogEntry(speaker, text) {
+            const entry = document.createElement('div');
+            entry.className = 'mb-3';
+            const speakerClass = speaker === 'You' ? 'font-bold text-blue-600' : 'font-bold text-slate-700';
+            entry.innerHTML = `<p class="${speakerClass}">${speaker}:</p><p class="text-slate-800">${text}</p>`;
+            negotiationLog.appendChild(entry);
+            negotiationLog.scrollTop = negotiationLog.scrollHeight;
+        }
+
+        function endGame(outcomeKey) {
+            const outcome = currentScenario.negotiationTree.outcomes[outcomeKey];
+            outcomeTitle.textContent = outcome.title;
+            outcomeSummary.textContent = outcome.summary;
+            outcomeDebrief.innerHTML = outcome.debrief.split('\n').map(p => `<p class="mb-2">${p}</p>`).join('');
+            
+            if (outcomeKey.includes('good') || outcomeKey.includes('excellent')) {
+                outcomeTitle.className = 'text-3xl font-bold mb-4 text-green-600';
+            } else if (outcomeKey.includes('ok')) {
+                outcomeTitle.className = 'text-3xl font-bold mb-4 text-yellow-600';
+            } else {
+                outcomeTitle.className = 'text-3xl font-bold mb-4 text-red-600';
+            }
+            
+            showScreen('outcome-screen');
+        }
+
+        // --- Initialize ---
+        init();
+    </script>
+</body>
+</html>
