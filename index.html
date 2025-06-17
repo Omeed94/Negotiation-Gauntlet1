@@ -25,9 +25,9 @@
             color: #6b7280;
         }
         .scenario-card.locked.can-unlock {
-            background-color: #eff6ff;
-            color: #1d4ed8;
-            cursor: pointer;
+             background-color: #eff6ff;
+             color: #1d4ed8;
+             cursor: pointer;
         }
         .scenario-card.locked.can-unlock:hover {
             transform: translateY(-2px);
@@ -59,22 +59,24 @@
             background-color: #3b82f6;
             color: white;
         }
-        /* Password container styles */
-        #password-container { text-align: center; margin-top: 50px; }
-        #game-container { display: none; }
-        input, button { padding: 10px; margin: 5px; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
-    <!-- Password Prompt -->
-    <div id="password-container">
-        <h2 class="text-2xl font-semibold mb-4">Enter Password</h2>
-        <input type="password" id="password-input" placeholder="Password" class="border border-gray-300 rounded-lg p-2 w-64">
-        <button onclick="checkPassword()" class="btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600">Submit</button>
+
+    <!-- Password Protection Screen -->
+    <div id="password-screen" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold mb-4">Enter Password</h2>
+            <p class="text-slate-600 mb-6">This game is password protected.</p>
+            <input type="password" id="password-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4" placeholder="Password">
+            <button id="password-submit" class="w-full btn bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Submit</button>
+            <p id="password-error" class="text-red-500 mt-4 h-4"></p>
+        </div>
     </div>
 
-    <!-- Game Content -->
-    <div id="game-container" class="max-w-5xl mx-auto p-4 md:p-8">
+
+    <!-- Main Game Container (hidden by default) -->
+    <div id="game-container" class="max-w-5xl mx-auto p-4 md:p-8 hidden">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Negotiation Gauntlet</h1>
             <div class="text-right">
@@ -105,7 +107,7 @@
             <!-- Analysis & Strategy Section -->
             <div id="strategy-phase" class="mb-6 p-6 rounded-lg shadow-md bg-white">
                 <h2 class="text-xl font-bold mb-4 border-b pb-2">Strategy & Analysis</h2>
-                <div class="flex justify-center mb-4 border border-slate-200 rounded-lg p-1 bg-slate-50">
+                 <div class="flex justify-center mb-4 border border-slate-200 rounded-lg p-1 bg-slate-50">
                     <button id="player-perspective-btn" class="perspective-switch-btn flex-1 p-2 rounded-md text-sm font-medium active">Your Perspective</button>
                     <button id="counterpart-perspective-btn" class="perspective-switch-btn flex-1 p-2 rounded-md text-sm font-medium">Counterpart's Perspective</button>
                 </div>
@@ -117,7 +119,7 @@
                     </div>
                     <div>
                         <label for="player-zopa" class="block font-semibold mb-1">Define Your ZOPA (Zone of Possible Agreement):</label>
-                        <div class="flex space-x-4 text-sm">
+                         <div class="flex space-x-4 text-sm">
                             <div class="flex-1 p-3 bg-red-50 text-red-700 rounded-md"><strong>Walk-away Point:</strong> <span id="player-zopa-walkaway"></span></div>
                             <div class="flex-1 p-3 bg-green-50 text-green-700 rounded-md"><strong>Target:</strong> <span id="player-zopa-target"></span></div>
                         </div>
@@ -129,7 +131,7 @@
                         <label for="counterpart-batna" class="block font-semibold mb-1">Estimate Counterpart's BATNA:</label>
                         <p id="counterpart-batna-text" class="text-sm text-slate-600 p-3 bg-slate-50 rounded-md"></p>
                     </div>
-                    <div>
+                     <div>
                         <label for="counterpart-interests" class="block font-semibold mb-1">Primary Interests:</label>
                         <p id="counterpart-interests-text" class="text-sm text-slate-600 p-3 bg-slate-50 rounded-md"></p>
                     </div>
@@ -160,24 +162,13 @@
             </div>
             <button id="play-again" class="btn bg-blue-500 text-white font-bold py-3 px-6 rounded-lg">Continue</button>
         </div>
+
     </div>
 
     <script>
-        // Password Protection Logic
-        const correctPassword = "Logintogame$398";
-        function checkPassword() {
-            const input = document.getElementById("password-input").value;
-            if (input === correctPassword) {
-                document.getElementById("password-container").style.display = "none";
-                document.getElementById("game-container").style.display = "block";
-            } else {
-                alert("Incorrect password!");
-            }
-        }
-
         // --- DATA ---
         const scenarios = [
-            {
+             {
                 id: 'job_interview',
                 title: 'The Job Interview',
                 costToUnlock: 0,
@@ -667,11 +658,11 @@
                         bad_favor_vague: { title: "Request Denied", summary: "Your vague answers made Taylor suspicious, and they said they weren't comfortable lending you the car.", points: 20, debrief: "In a negotiation based on trust, transparency is key. Your lack of specifics made it seem like you were hiding something, which increased their perceived risk." },
                         bad_favor_complain: { title: "A Reluctant 'Yes'", summary: "Taylor reluctantly agreed after you complained, but you can tell they're not happy about it.", points: 50, debrief: "You got the car, but you damaged the relationship by appearing ungrateful for the favor. This will make it much harder to ask for anything in the future." },
                         good_favor: { title: "Deal Made!", summary: "You got the car for the weekend after agreeing to some fair conditions.", points: 80, debrief: "A solid, respectful negotiation. You addressed their concerns, made a fair offer (gas), and agreed to a reasonable condition (cleaning). You both walk away feeling good about the arrangement." },
-                        excellent_favor: { title: "Relationship Strengthened!", summary: "You got the car, and Taylor feels great about it because you also offered to do their laundry for a week.", points: 100, debrief: "This response is not yet implemented in the tree, but would represent finding a creative, unrelated trade that is low-cost for you but high-value for them, strengthening the relationship." }
+                        excellent_favor: { title: "Relationship Strengthened!", summary: "You got the car, and Taylor feels great about it because you also offered to do their laundry for a week.", points: 100, debrief: "This response is not yet implemented in the tree, but represents finding a creative, unrelated trade that is low-cost for you but high-value for them, strengthening the relationship." }
                     }
                 }
             },
-            {
+             {
                 id: 'restaurant_bill',
                 title: 'The Restaurant Bill',
                 costToUnlock: 125,
@@ -727,7 +718,7 @@
                     }
                 }
             },
-            {
+             {
                 id: 'holiday_dinner',
                 title: 'The Holiday Dinner',
                 costToUnlock: 250,
@@ -771,4 +762,311 @@
                         bad_holiday_capitulate: { title: "A Resentful Holiday", summary: "You went to your partner's family dinner, but you were unhappy and it showed, making the day awkward for everyone.", points: 10, debrief: "Capitulating isn't a real agreement. While it avoids an argument, the unresolved resentment will likely cause bigger problems later. A good negotiation leads to an outcome both parties are happy with." },
                         ok_holiday_host: { title: "A Stressful Compromise", summary: "You hosted your own dinner. It was a logistical nightmare and didn't fully satisfy either family's traditions.", points: 50, debrief: "While a creative idea, this compromise created more work and stress for you without fully meeting anyone's interests. Sometimes the middle ground is the worst place to be." },
                         good_holiday: { title: "A Successful Compromise!", summary: "You agreed to go to your family's party for a shorter, defined period. Your partner felt heard and you still got to see your family.", points: 80, debrief: "A great outcome. You identified the specific problem (the duration and noise) and found a solution that addressed it directly. This allowed for a compromise that met everyone's core needs." },
-                        excellent_holiday: { title: "An
+                        excellent_holiday: { title: "An Excellent Long-Term Solution!", summary: "After talking it out, you decide to alternate holidays each year, with the 'off' family getting a special visit the weekend before.", points: 125, debrief: "This isn't an option in the tree, but represents the best possible outcome. You've created a fair, long-term system that respects both families and removes this point of conflict from your relationship for good. This is strategic, interest-based problem-solving." }
+                    }
+                }
+            },
+            {
+                id: 'union_deal',
+                title: 'The Union Deal',
+                costToUnlock: 350,
+                context: "You are the lead negotiator for 'AutoMakers Inc.' The contract with the factory workers' union is expiring. The union is demanding a 10% wage increase per year and better healthcare benefits. The company is facing stiff competition and cannot afford such a large increase.",
+                goal: "Secure a new 3-year contract that is financially sustainable while avoiding a costly worker strike.",
+                player: {
+                    batna: "Endure a worker strike, shutting down production and costing millions.",
+                    zopa: { walkaway: "A total compensation increase over 7% per year.", target: "An increase below 4% per year, possibly with productivity concessions." }
+                },
+                counterpart: {
+                    name: "Frank, the Union Leader",
+                    batna: "Call a strike, which his members have authorized.",
+                    interests: "Securing a significant 'win' for his members to maintain his leadership. Ensuring wages keep up with inflation. Improving job security amidst automation fears."
+                },
+                negotiationTree: {
+                    start: {
+                        prompt: "Frank opens the negotiation. 'My members are struggling with inflation. We need a 10% raise, better healthcare, and a commitment to no automation-related layoffs for the next 3 years. It's a full package.'",
+                        options: [
+                            { text: "Tell him the demands are impossible and the company will never agree.", outcome: 'bad_union_impossible' },
+                            { text: "Offer a 1% raise and say it's the best the company can do.", next: 'counter_low_union' },
+                            { text: "Acknowledge the workers' concerns and ask to tackle one issue at a time, starting with job security.", next: 'ask_one_issue' },
+                            { text: "Open the company's financial books to show them why a 10% raise is unsustainable.", next: 'open_books' }
+                        ]
+                    },
+                    counter_low_union: {
+                        response: "Frank laughs. '1%? That's an insult. You're not taking this seriously. My members are ready to walk right now.'",
+                        options: [
+                            { text: "Hold firm on 1%.", outcome: 'bad_union_strike' },
+                            { text: "Apologize and shift to a multi-issue discussion.", next: 'ask_one_issue' }
+                        ]
+                    },
+                    ask_one_issue: {
+                        response: "Frank seems willing to engage. 'Alright, let's talk job security. We're worried about the new robotics line. What can you offer?'",
+                        options: [
+                            { text: "Offer a 3-year moratorium on automation layoffs in exchange for a smaller wage increase.", next: 'propose_tradeoff' },
+                            { text: "Offer a generous severance package for anyone replaced by automation.", outcome: 'ok_union' },
+                            { text: "Say you can't make any promises on job security.", outcome: 'bad_union_impossible' }
+                        ]
+                    },
+                     open_books: {
+                        response: "Frank looks surprised, then intrigued. This is a high-risk move of transparency. He and his team review the numbers. He comes back to the table. 'Okay, we see your point on the 10%. But we still need a significant raise. Let's talk about profit-sharing instead.'",
+                        options: [
+                           { text: "Agree to a profit-sharing plan tied to productivity.", outcome: 'excellent_union_alt' },
+                           { text: "Reject profit-sharing and return to a standard wage discussion.", next: 'ask_one_issue'}
+                        ]
+                    },
+                    propose_tradeoff: {
+                        response: "Frank is interested. 'Job security is a huge deal for us. If you can guarantee no layoffs, we can be more flexible on wages. What kind of number are you thinking if we get that guarantee?'",
+                        options: [
+                            { text: "Propose a 3% annual wage increase.", outcome: 'excellent_union' },
+                            { text: "Propose a 1.5% annual wage increase.", next: 'counter_low_union' }
+                        ]
+                    },
+                    outcomes: {
+                        bad_union_impossible: { title: "Negotiations Collapse", summary: "Your refusal to engage with the union's core issues led to a breakdown in talks.", points: 0, debrief: "By immediately declaring their position impossible, you shut down the negotiation before it could start. Successful negotiation requires exploring the interests behind the positions." },
+                        bad_union_strike: { title: "Strike!", summary: "Your lowball offer was seen as an insult, and the union has gone on strike.", points: -50, debrief: "A deliberately low anchor can be perceived as negotiating in bad faith. This destroyed any trust and made a strike almost inevitable. Your BATNA has been triggered, and both sides are now losing." },
+                        ok_union: { title: "A Deal is Made, but Tense", summary: "You agreed to a 6% wage increase and a better severance package.", points: 50, debrief: "You avoided a strike, which is a success. However, you engaged in a simple compromise on multiple fronts. You didn't find the most creative trade-offs, leading to a more expensive deal." },
+                        excellent_union: { title: "Contract Signed!", summary: "You guaranteed job security in exchange for a sustainable 3% annual wage increase.", points: 100, debrief: "A fantastic outcome. You correctly identified that job security was a more important underlying interest to the union than the exact wage number. By making a major concession on their biggest fear, you gained a major concession on your biggest need (cost control)." },
+                        excellent_union_alt: { title: "A Revolutionary Deal!", summary: "By transparently sharing financials, you shifted the negotiation to a profit-sharing model, aligning incentives.", points: 150, debrief: "An incredibly high-risk, high-reward strategy that paid off. Opening your books can be dangerous, but here it built immense trust and changed the game from a zero-sum fight over wages to a collaborative effort to increase profits for everyone. This is expert-level negotiation." }
+                    }
+                }
+            }
+        ];
+
+        // --- DOM Elements ---
+        const totalPointsDisplay = document.getElementById('total-points-display');
+        const scenarioSelection = document.getElementById('scenario-selection');
+        const scenarioList = document.getElementById('scenario-list');
+        const gameScreen = document.getElementById('game-screen');
+        const outcomeScreen = document.getElementById('outcome-screen');
+        const pointsAwarded = document.getElementById('points-awarded');
+        const scenarioTitle = document.getElementById('scenario-title');
+        const scenarioContext = document.getElementById('scenario-context');
+        const scenarioGoal = document.getElementById('scenario-goal');
+        const playerPerspectiveBtn = document.getElementById('player-perspective-btn');
+        const counterpartPerspectiveBtn = document.getElementById('counterpart-perspective-btn');
+        const playerPerspectiveDiv = document.getElementById('player-perspective');
+        const counterpartPerspectiveDiv = document.getElementById('counterpart-perspective');
+        const playerBatna = document.getElementById('player-batna-text');
+        const playerZopaWalkaway = document.getElementById('player-zopa-walkaway');
+        const playerZopaTarget = document.getElementById('player-zopa-target');
+        const counterpartBatna = document.getElementById('counterpart-batna-text');
+        const counterpartInterests = document.getElementById('counterpart-interests-text');
+        const negotiationLog = document.getElementById('negotiation-log');
+        const playerOptions = document.getElementById('player-options');
+        const outcomeTitle = document.getElementById('outcome-title');
+        const outcomeSummary = document.getElementById('outcome-summary');
+        const outcomeDebrief = document.getElementById('outcome-debrief');
+        const playAgainBtn = document.getElementById('play-again');
+        const backToMenuBtn = document.getElementById('back-to-menu');
+
+        // --- Game State ---
+        let currentScenario = null;
+        let currentNodeKey = null;
+        let totalPoints = 0;
+        let unlockedScenarios = [];
+
+        // --- Functions ---
+
+        function loadProgress() {
+            const savedData = localStorage.getItem('negotiationGauntletProgress');
+            if (savedData) {
+                const progress = JSON.parse(savedData);
+                totalPoints = progress.totalPoints || 0;
+                unlockedScenarios = progress.unlockedScenarios || [scenarios[0].id];
+            } else {
+                totalPoints = 0;
+                unlockedScenarios = [scenarios[0].id];
+            }
+            updatePointsDisplay();
+        }
+
+        function saveProgress() {
+            const progress = { totalPoints, unlockedScenarios };
+            localStorage.setItem('negotiationGauntletProgress', JSON.stringify(progress));
+        }
+
+        function updatePointsDisplay() {
+            totalPointsDisplay.textContent = `${totalPoints} NP`;
+        }
+
+        function init() {
+            loadProgress();
+            populateScenarioList();
+            showScreen('scenario-selection');
+            playAgainBtn.addEventListener('click', () => {
+                populateScenarioList();
+                showScreen('scenario-selection');
+            });
+            backToMenuBtn.addEventListener('click', () => {
+                populateScenarioList();
+                showScreen('scenario-selection');
+            });
+            playerPerspectiveBtn.addEventListener('click', () => switchPerspective('player'));
+            counterpartPerspectiveBtn.addEventListener('click', () => switchPerspective('counterpart'));
+        }
+
+        function populateScenarioList() {
+            scenarioList.innerHTML = '';
+            // Sort scenarios by cost to ensure proper order
+            const sortedScenarios = [...scenarios].sort((a, b) => a.costToUnlock - b.costToUnlock);
+
+            sortedScenarios.forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card p-6 rounded-lg shadow-md text-left';
+                
+                const isUnlocked = unlockedScenarios.includes(scenario.id);
+
+                if (isUnlocked) {
+                    card.innerHTML = `
+                        <h3 class="text-xl font-bold mb-2 text-slate-800">${scenario.title}</h3>
+                        <p class="text-sm text-slate-600">${scenario.context.substring(0, 100)}...</p>
+                        <div class="mt-4 text-green-600 font-bold">Unlocked</div>
+                    `;
+                    card.classList.add('cursor-pointer');
+                    card.addEventListener('click', () => startGame(scenario.id));
+                } else {
+                    const canUnlock = totalPoints >= scenario.costToUnlock;
+                    card.classList.add('locked');
+                    if(canUnlock) card.classList.add('can-unlock');
+
+                    card.innerHTML = `
+                        <h3 class="text-xl font-bold mb-2">${scenario.title}</h3>
+                        <p class="text-sm">${scenario.context.substring(0, 100)}...</p>
+                        <div class="mt-4 flex items-center justify-center font-bold">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <span>${canUnlock ? 'Unlock for' : ''} ${scenario.costToUnlock} NP</span>
+                        </div>
+                    `;
+                    if (canUnlock) {
+                        card.addEventListener('click', () => unlockScenario(scenario.id, scenario.costToUnlock));
+                    }
+                }
+                scenarioList.appendChild(card);
+            });
+        }
+        
+        function unlockScenario(scenarioId, cost) {
+            if (totalPoints >= cost) {
+                totalPoints -= cost;
+                unlockedScenarios.push(scenarioId);
+                saveProgress();
+                updatePointsDisplay();
+                populateScenarioList();
+            }
+        }
+
+        function showScreen(screenId) {
+            scenarioSelection.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            outcomeScreen.classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function startGame(scenarioId) {
+            currentScenario = scenarios.find(s => s.id === scenarioId);
+            currentNodeKey = 'start';
+            setupScenarioUI();
+            updateNegotiationUI();
+            showScreen('game-screen');
+        }
+
+        function setupScenarioUI() {
+            scenarioTitle.textContent = currentScenario.title;
+            scenarioContext.textContent = currentScenario.context;
+            scenarioGoal.textContent = currentScenario.goal;
+            playerBatna.textContent = currentScenario.player.batna;
+            playerZopaWalkaway.textContent = currentScenario.player.zopa.walkaway;
+            playerZopaTarget.textContent = currentScenario.player.zopa.target;
+            counterpartBatna.textContent = currentScenario.counterpart.batna;
+            counterpartInterests.textContent = currentScenario.counterpart.interests;
+            negotiationLog.innerHTML = '';
+            switchPerspective('player');
+        }
+        
+        function switchPerspective(perspective) {
+             if (perspective === 'player') {
+                playerPerspectiveDiv.classList.remove('hidden');
+                counterpartPerspectiveDiv.classList.add('hidden');
+                playerPerspectiveBtn.classList.add('active');
+                counterpartPerspectiveBtn.classList.remove('active');
+            } else {
+                playerPerspectiveDiv.classList.add('hidden');
+                counterpartPerspectiveDiv.classList.remove('hidden');
+                playerPerspectiveBtn.classList.remove('active');
+                counterpartPerspectiveBtn.classList.add('active');
+            }
+        }
+
+        function updateNegotiationUI() {
+            const node = currentScenario.negotiationTree[currentNodeKey];
+            if (node.response) {
+                addLogEntry(currentScenario.counterpart.name, node.response);
+            } else {
+                 addLogEntry("System", node.prompt);
+            }
+            playerOptions.innerHTML = '';
+            node.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.className = 'option-btn btn bg-blue-500 text-white font-bold py-3 px-4 rounded-lg w-full text-left leading-tight';
+                button.addEventListener('click', () => selectOption(option));
+                playerOptions.appendChild(button);
+            });
+        }
+
+        function selectOption(option) {
+            addLogEntry("You", option.text);
+            disableOptions();
+            setTimeout(() => {
+                if (option.outcome) {
+                    endGame(option.outcome);
+                } else {
+                    currentNodeKey = option.next;
+                    updateNegotiationUI();
+                }
+            }, 1200);
+        }
+        
+        function disableOptions() {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        function addLogEntry(speaker, text) {
+            const entry = document.createElement('div');
+            entry.className = 'mb-3';
+            const speakerClass = speaker === 'You' ? 'font-bold text-blue-600' : 'font-bold text-slate-700';
+            entry.innerHTML = `<p class="${speakerClass}">${speaker}:</p><p class="text-slate-800">${text}</p>`;
+            negotiationLog.appendChild(entry);
+            negotiationLog.scrollTop = negotiationLog.scrollHeight;
+        }
+
+        function endGame(outcomeKey) {
+            const outcome = currentScenario.negotiationTree.outcomes[outcomeKey];
+            totalPoints += outcome.points;
+            saveProgress();
+            updatePointsDisplay();
+
+            outcomeTitle.textContent = outcome.title;
+            outcomeSummary.textContent = outcome.summary;
+            pointsAwarded.textContent = `You earned ${outcome.points} NP!`;
+            outcomeDebrief.innerHTML = outcome.debrief.split('\n').map(p => `<p class="mb-2">${p}</p>`).join('');
+            
+            if (outcomeKey.includes('good') || outcomeKey.includes('excellent')) {
+                 outcomeTitle.className = 'text-3xl font-bold mb-4 text-green-600';
+            } else if (outcomeKey.includes('ok')) {
+                outcomeTitle.className = 'text-3xl font-bold mb-4 text-yellow-600';
+            } else {
+                outcomeTitle.className = 'text-3xl font-bold mb-4 text-red-600';
+            }
+            
+            showScreen('outcome-screen');
+        }
+
+        // --- Initialize ---
+        init();
+
+    </script>
+</body>
+</html>
